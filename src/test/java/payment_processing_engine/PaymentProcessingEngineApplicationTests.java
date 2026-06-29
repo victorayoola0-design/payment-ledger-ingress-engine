@@ -20,6 +20,4 @@ class PaymentProcessingEngineApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
-
 }
