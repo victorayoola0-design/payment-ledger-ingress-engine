@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: mydatabase
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+    ports:
+      - "5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379"
+
+  kafka:
+    image: apache/kafka:3.7.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      # Fix 1: Bind to 0.0.0.0 so external and internal traffic can resolve correctly
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      # Fix 2: Use 0.0.0.0 or the node ID alias for the quorum voters, NOT localhost
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@0.0.0.0:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      # Fix 3: Provide a pre-generated cluster ID so KRaft formats the log directory automatically
+      CLUSTER_ID: '4L62YDgNTki38uhZZ7DG7Q'
+    ports:
+      - "9092:9092"
+  logging:
+    level:
+      root: INFO
+      # Force Kafka clients and Spring wrapper to only log actual errors/warnings
+      org.apache.kafka: WARN
+      org.springframework.kafka: WARN
+
+  spring:
+    devtools:
+      restart:
+        # Stop automatic restarts from minor background file changes
+        enabled: false
